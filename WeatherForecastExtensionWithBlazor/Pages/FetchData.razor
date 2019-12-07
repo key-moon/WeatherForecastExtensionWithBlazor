@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject HttpClient Http
+@inject IJSRuntime Runtime;
 
 <h1>Weather forecast</h1>
 
@@ -11,12 +12,13 @@
 }
 else
 {
+<p>location: @City.name (@City.coord.lat, @City.coord.lon)</p>
     <table class="table">
         <thead>
             <tr>
                 <th>Date</th>
                 <th>Temp. (C)</th>
-                <th>Temp. (F)</th>
+                <th>Precipitation (mm/3h)</th>
                 <th>Summary</th>
             </tr>
         </thead>
@@ -24,10 +26,10 @@ else
             @foreach (var forecast in forecasts)
             {
                 <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
+                    <td>@forecast.dt_txt</td>
+                    <td>@forecast.main.temp</td>
+                    <td>@((forecast.rain?.threeh ?? 0) + (forecast.snow?.threeh ?? 0))</td>
+                    <td>@forecast.weather.FirstOrDefault()?.description</td>
                 </tr>
             }
         </tbody>
@@ -35,11 +37,23 @@ else
 }
 
 @code {
-    private WeatherForecast[] forecasts;
+    const string AppID = "sample";
+    static readonly Uri BaseURL = new Uri("https://api.openweathermap.org");
+    private City City;
+    private Forecast[] forecasts;
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await Http.GetJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+        var coord = await GetCoordAsync();
+        var query = new Uri(BaseURL, $"/data/2.5/forecast?lat={coord.lat}&lon={coord.lon}&units=metric&appid={AppID}");
+        var forecast = await Http.GetJsonAsync<Forecasts>(query.AbsoluteUri);
+        City = forecast.city;
+        forecasts = forecast.list;
+    }
+
+    private async Task<Coord> GetCoordAsync()
+    {
+        return await Runtime.InvokeAsync<Coord>("get_coord");
     }
 
     public class WeatherForecast
