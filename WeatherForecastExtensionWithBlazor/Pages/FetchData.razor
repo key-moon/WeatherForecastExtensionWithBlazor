@@ -1,5 +1,4 @@
-﻿@page "/"
-@inject HttpClient Http
+﻿@page "/index.html"
 @inject IJSRuntime Runtime;
 
 <h1>Weather forecast</h1>
@@ -37,6 +36,7 @@ else
 }
 
 @code {
+    HttpClient Http = new HttpClient();
     const string AppID = "sample";
     static readonly Uri BaseURL = new Uri("https://api.openweathermap.org");
     private City City;
